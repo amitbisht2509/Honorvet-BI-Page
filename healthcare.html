@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en" class="theme-dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#0f172a">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Healthcare Portal — HonorVet Dashboard Portal</title>
+
+  <link rel="icon" href="icons/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="images/honorvettech_logo-removebg-preview.png">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/dark.css">
+
+  <!-- ==========================================================
+       NO AUTH GATE HERE, BY DESIGN. Healthcare is a HUB: it only
+       lists which delivery-manager portals exist and holds no
+       dashboards or report URLs itself. Each manager page enforces
+       its own password before showing any data.
+       ========================================================== -->
+  <script src="js/config.js"></script>
+  <script src="js/auth.js"></script>
+</head>
+
+<body class="theme-dark" data-page="subportal" data-parent="healthcare">
+
+  <noscript>
+    <div class="noscript-banner">
+      This portal requires JavaScript to verify your access.
+      Please enable JavaScript and reload the page.
+    </div>
+  </noscript>
+
+  <!-- Ambient background layers (purely decorative) -->
+  <div class="bg-layer" aria-hidden="true">
+    <span class="bg-orb bg-orb-1"></span>
+    <span class="bg-orb bg-orb-2"></span>
+    <span class="bg-grid"></span>
+  </div>
+
+  <main class="portal">
+
+    <!-- ===================== HEADER ===================== -->
+    <header class="portal-head">
+      <a class="portal-back" href="index.html">
+        <svg class="icon icon-sm" viewBox="0 0 24 24" aria-hidden="true"><line x1="20" y1="12" x2="5" y2="12"/><polyline points="11 6 5 12 11 18"/></svg>
+        All departments
+      </a>
+
+      <div class="brand-mark">
+        <img src="images/honorvettech_logo-removebg-preview.png" alt="HonorVet Technologies" width="200" height="200">
+      </div>
+
+      <span class="eyebrow"><span class="dot"></span>Healthcare Department</span>
+
+      <h1 class="portal-title">Healthcare Portal</h1>
+
+      <p class="portal-lede">
+        Select your delivery manager portal to access healthcare dashboards.
+      </p>
+
+      <div class="head-meta" id="headMeta"></div>
+    </header>
+
+    <!-- ===================== SUB-PORTAL CARDS ===================== -->
+    <section class="grid-cards grid-cards-2" id="deptGrid"
+             aria-label="Healthcare delivery managers"></section>
+
+    <!-- ===================== FOOTER ===================== -->
+    <footer class="portal-foot">
+      <span class="foot-secure">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 11.8 11.4 14.2 15.4 9.8"/></svg>
+        <span>Each manager portal is password-protected &middot; session ends when this tab closes</span>
+      </span>
+      <span>&copy; <strong>HonorVet Technologies</strong> &middot; Internal use only</span>
+    </footer>
+
+  </main>
+
+  <!-- ===================== AUTHENTICATION POPUP ===================== -->
+  <div class="modal" id="authModal" role="dialog" aria-modal="true"
+       aria-labelledby="authTitle" aria-hidden="true">
+    <div class="modal-panel auth-panel" id="authPanel">
+
+      <div class="auth-head">
+        <div class="auth-logo">
+          <img src="images/honorvettech_logo-removebg-preview.png" alt="HonorVet Technologies" width="200" height="200">
+        </div>
+        <span class="auth-dept">
+          <span id="authDeptIcon"></span>
+          <span id="authDeptLabel">Healthcare</span>
+        </span>
+        <h2 class="auth-title" id="authTitle">Manager Portal</h2>
+        <p class="auth-sub" id="authSub">Enter password to continue</p>
+      </div>
+
+      <form id="authForm" novalidate>
+        <div class="field">
+          <label class="field-label" for="authPassword">Manager password</label>
+          <div class="field-control">
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+            <input class="input input-with-icon input-with-action"
+                   id="authPassword" name="password" type="password"
+                   autocomplete="current-password" spellcheck="false"
+                   placeholder="Enter password" required>
+            <button class="field-action" id="authToggle" type="button" aria-pressed="false">Show</button>
+          </div>
+        </div>
+
+        <div class="auth-error" id="authError" role="alert" aria-live="assertive">
+          <div class="auth-error-inner">
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M10.3 3.6 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.6a2 2 0 0 0-3.4 0z"/><line x1="12" y1="9" x2="12" y2="13.5"/><line x1="12" y1="17" x2="12" y2="17"/></svg>
+            <span id="authErrorText"></span>
+          </div>
+        </div>
+
+        <div class="auth-actions">
+          <button class="btn btn-ghost btn-lg" id="authCancel" type="button">Cancel</button>
+          <button class="btn btn-primary btn-lg" id="authSubmit" type="submit" data-ripple>
+            <span class="btn-label">Login</span>
+            <span class="btn-spin"></span>
+          </button>
+        </div>
+      </form>
+
+      <p class="auth-note">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><line x1="12" y1="11" x2="12" y2="16"/><line x1="12" y1="8" x2="12" y2="8"/></svg>
+        <span>Your password is verified in the browser against a SHA-256 hash and is never
+        stored or transmitted. Access lasts until you sign out or close this tab.</span>
+      </p>
+
+    </div>
+  </div>
+
+  <div class="toast-stack" role="status" aria-live="polite"></div>
+
+  <script src="js/app.js"></script>
+</body>
+</html>
