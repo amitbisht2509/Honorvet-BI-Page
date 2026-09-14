@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en" class="theme-dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Password Hash Generator — HonorVet Dashboard Portal</title>
+  <link rel="icon" href="../icons/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="../css/components.css">
+  <link rel="stylesheet" href="../css/dark.css">
+  <style>
+    /* This admin tool is intentionally plain — it is not part of the portal UI. */
+    .tool { max-width: 720px; margin: 0 auto; padding: var(--sp-12) var(--sp-6); }
+    .tool h1 { font-size: var(--text-3xl); }
+    .tool p.lede { margin-top: var(--sp-3); color: var(--text-muted); }
+    .card {
+      margin-top: var(--sp-8); padding: var(--sp-6); border-radius: var(--r-xl);
+      background: rgba(30, 41, 59, .8); border: 1px solid var(--border);
+    }
+    .row { display: grid; gap: var(--sp-4); grid-template-columns: 1fr 1fr; }
+    @media (max-width: 620px) { .row { grid-template-columns: 1fr; } }
+    select.input, input.input { background: rgba(15,23,42,.72); border-color: var(--border-strong); color: #fff; }
+    select.input:focus, input.input:focus { outline: none; border-color: var(--brand-primary); }
+    .out {
+      margin-top: var(--sp-5); padding: var(--sp-4); border-radius: var(--r-md);
+      background: rgba(15,23,42,.8); border: 1px dashed var(--border-strong);
+      font-family: var(--font-mono); font-size: var(--text-sm);
+      word-break: break-all; color: #5eead4; min-height: 3.2em;
+    }
+    .snippet { color: var(--text-soft); }
+    .warn {
+      margin-top: var(--sp-6); padding: var(--sp-4); border-radius: var(--r-md);
+      border: 1px solid rgba(245,158,11,.35); background: rgba(245,158,11,.1);
+      color: #fcd34d; font-size: var(--text-sm); line-height: 1.6;
+    }
+    .actions { display: flex; gap: var(--sp-3); margin-top: var(--sp-5); flex-wrap: wrap; }
+  </style>
+</head>
+
+<body class="theme-dark">
+  <div class="bg-layer" aria-hidden="true"><span class="bg-grid"></span></div>
+
+  <main class="tool" style="position:relative;z-index:1">
+    <h1>Password Hash Generator</h1>
+    <p class="lede">
+      Generates the <code>passwordHash</code> value for a department in
+      <code>js/config.js</code>. Everything happens locally in this page —
+      nothing is uploaded, logged, or saved.
+    </p>
+
+    <div class="card">
+      <div class="row">
+        <div class="field">
+          <label class="field-label" for="dept">Department</label>
+          <select class="input" id="dept"></select>
+        </div>
+        <div class="field">
+          <label class="field-label" for="pw">New password</label>
+          <input class="input" id="pw" type="text" autocomplete="off" spellcheck="false"
+                 placeholder="Type the new password">
+        </div>
+      </div>
+
+      <div class="out" id="out">Choose a department and type a password…</div>
+
+      <div class="actions">
+        <button class="btn btn-primary" id="copyHash" type="button" data-ripple>Copy hash</button>
+        <button class="btn btn-ghost" id="copyLine" type="button" data-ripple>Copy config.js line</button>
+      </div>
+
+      <p class="snippet" style="margin-top:var(--sp-4);font-size:var(--text-xs)">
+        Hash input: <code id="preview">—</code>
+      </p>
+    </div>
+
+    <div class="warn">
+      <strong>Before you deploy:</strong> this file is only an authoring aid. Delete
+      <code>tools/</code> from the published site if you would rather not ship it —
+      it does not affect the portal. Also remember that client-side hashes can be read
+      by anyone who views the page source, so treat department passwords as a
+      convenience gate, not as protection for confidential data (README §8).
+    </div>
+
+    <p style="margin-top:var(--sp-6)"><a class="btn btn-ghost" href="../index.html">← Back to portal</a></p>
+  </main>
+
+  <div class="toast-stack" role="status" aria-live="polite"></div>
+
+  <script src="../js/config.js"></script>
+  <script src="../js/auth.js"></script>
+  <script>
+    (function () {
+      "use strict";
+      var deptSel = document.getElementById("dept");
+      var pw = document.getElementById("pw");
+      var out = document.getElementById("out");
+      var preview = document.getElementById("preview");
+      var currentHash = "";
+
+      // Walk the whole portal tree, at any nesting depth, and list every portal
+      // that actually has a password. Hubs (Healthcare, Team Leaders) are
+      // skipped as options because they have no password of their own — they
+      // only contribute their name to the group label / indentation.
+      function collect(portals, depth, into) {
+        portals.forEach(function (p) {
+          var kids = HVBI.getSubPortals(p.key);
+          if (p.passwordHash) {
+            into.push({ portal: p, depth: depth });
+          }
+          if (kids.length) collect(kids, depth + 1, into);
+        });
+      }
+
+      HVBI.departments.forEach(function (d) {
+        var kids = HVBI.getSubPortals(d.key);
+
+        if (!kids.length && d.passwordHash) {
+          var opt = document.createElement("option");
+          opt.value = d.key;
+          opt.textContent = d.name + "  (" + d.key + ")";
+          deptSel.appendChild(opt);
+          return;
+        }
+
+        var rows = [];
+        collect(kids, 0, rows);
+        if (!rows.length) return;
+
+        var group = document.createElement("optgroup");
+        group.label = d.name + " — sub-portals";
+        rows.forEach(function (row) {
+          var s = row.portal;
+          var o = document.createElement("option");
+          o.value = s.key;
+          o.textContent =
+            new Array(row.depth + 1).join(" ") +
+            s.name + (s.role ? " · " + s.role : "") + "  (" + s.key + ")";
+          group.appendChild(o);
+        });
+        deptSel.appendChild(group);
+      });
+
+      function render() {
+        var key = deptSel.value;
+        var input = HVBI.auth.saltPrefix + key + "|" + pw.value;
+        preview.textContent = pw.value ? input : "—";
+
+        if (!pw.value) {
+          currentHash = "";
+          out.textContent = "Choose a department and type a password…";
+          return;
+        }
+        HVAuth.sha256(input).then(function (hash) {
+          currentHash = hash;
+          out.textContent = hash;
+        });
+      }
+
+      function copy(text, label) {
+        if (!text) return;
+        navigator.clipboard.writeText(text).then(
+          function () { alert(label + " copied to the clipboard."); },
+          function () { window.prompt("Copy manually:", text); }
+        );
+      }
+
+      deptSel.addEventListener("change", render);
+      pw.addEventListener("input", render);
+
+      document.getElementById("copyHash").addEventListener("click", function () {
+        copy(currentHash, "Hash");
+      });
+      document.getElementById("copyLine").addEventListener("click", function () {
+        copy('passwordHash: "' + currentHash + '",', "config.js line");
+      });
+
+      render();
+    })();
+  </script>
+</body>
+</html>
